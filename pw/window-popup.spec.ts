@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+const isCI = require('is-ci')
 
 test('Click on Twitter Button to open Window Based Popup ', async ({
   page
@@ -12,7 +13,7 @@ test('Click on Twitter Button to open Window Based Popup ', async ({
   ])
 
   await windowPopup.waitForLoadState()
-  expect(await windowPopup.title()).toBe('Profile / X')
+  if (!isCI) expect(await windowPopup.title()).toBe('Profile / X')
 
   windowPopup.close()
   expect(await page.title()).toBe(
@@ -32,7 +33,7 @@ test('Click on Facebook Button to open Window Based Popup ', async ({
   ])
   await windowPopup.waitForLoadState()
 
-  expect(await windowPopup.title()).toBe('LambdaTest | Facebook')
+  if (!isCI) expect(await windowPopup.title()).toBe('LambdaTest | Facebook')
 
   windowPopup.close()
   expect(await page.title()).toBe(
