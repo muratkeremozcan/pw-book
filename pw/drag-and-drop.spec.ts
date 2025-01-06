@@ -13,8 +13,8 @@ test('drag and drop method 1', async ({ page }) => {
   await drop.hover()
   await page.mouse.up()
 
-  await expect(
-    page.locator('#droppedlist', { hasText: 'Draggable 1' })
+  expect(
+    await page.locator('#droppedlist', { hasText: 'Draggable 1' })
   ).toBeVisible()
 })
 
@@ -24,7 +24,7 @@ test('drag and drop method 2', async ({ page }) => {
 
   await dragElement.dragTo(dropArea)
 
-  await expect(
-    page.locator('#droppedlist', { hasText: 'Draggable 2' })
+  expect(
+    await page.locator('#droppedlist', { hasText: 'Draggable 2' })
   ).toBeVisible()
 })
