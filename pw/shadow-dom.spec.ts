@@ -1,5 +1,7 @@
 import { test } from '@playwright/test'
 
+// nothing specific is needed for shadow dom
+// at most you might need something like: shadow-root-selector >> input[name="email"]
 test('Handling Shadow DOM', async ({ page }) => {
   await page.goto('https://www.lambdatest.com/selenium-playground/shadow-dom')
 

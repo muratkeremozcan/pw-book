@@ -32,7 +32,7 @@ test('Multi window', async ({ browser }) => {
   firstPage.bringToFront()
   await firstPage.locator('//a[@href="/products"]').click()
 
-  // observe pages
+  // observe pages (only in debug mode with npm run pw:open-debug)
   await firstPage.pause()
   await secondPage.pause()
 
