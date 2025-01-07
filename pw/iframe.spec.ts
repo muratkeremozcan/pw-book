@@ -7,5 +7,5 @@ test('Iframe', async ({ page }) => {
     .frameLocator('[src="./contant"]')
     .locator('//div[@class="rsw-ce"]')
   await textArea.fill('foo')
-  expect(await textArea).toHaveText('foo')
+  await expect(textArea).toHaveText('foo')
 })
