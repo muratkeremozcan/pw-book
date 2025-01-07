@@ -13,4 +13,5 @@ npm run pw:run-debug  # run with debug
 npm run pw:trace      # drag & drop a trace.zip from local or CI
 npm run pw:codegen    # point-and-click wizard
 npm run pw:clear      # remove all temporary pw files
+npm run pw:run-smoke  # grep run by tag
 ```
