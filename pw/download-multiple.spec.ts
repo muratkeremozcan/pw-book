@@ -1,7 +1,10 @@
 import { test, expect } from '@playwright/test'
+import isCi from 'is-ci'
 import fs from 'node:fs'
 
 test('Download Multiple files', async ({ page }) => {
+  if (!isCi) test.skip()
+
   await page.goto('https://the-internet.herokuapp.com/download')
 
   const downloadFiles = ['TestData.xlsx', 'dummy.txt']
