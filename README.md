@@ -1,20 +1,4 @@
-# Cy, Node template
-
-A template with tooling, configuration and best practices for a Cy api e2e testing in a Node.js project.
-
-## Setup
-
-```bash
-npm i
-```
-
-Use the sample `.env.example` file to create a `.env` file of your own. These values will also have to exist in your CI secrets.
-
-```bash
-SERVERPORT=3001
-```
-
-### Scripts
+# Pw examples
 
 ```bash
 npm run lint
