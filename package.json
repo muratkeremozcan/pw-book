@@ -19,7 +19,8 @@
     "pw:run-debug": "npx playwright test --trace on ; npx playwright show-report",
     "pw:trace": "npx playwright show-trace",
     "pw:clear": "rm -rf test-results playwright-report playwright/.cache",
-    "pw:codegen": "npx playwright codegen"
+    "pw:codegen": "npx playwright codegen",
+    "pw:run-smoke": "npm run pw:run -- --grep @foo"
   },
   "devDependencies": {
     "@esbuild-plugins/node-globals-polyfill": "0.2.3",
