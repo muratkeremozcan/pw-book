@@ -14,10 +14,9 @@
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.jest.json",
     "lint": "eslint --ext=.js,.ts,.tsx --fix",
     "pw:open": "npx playwright test --ui",
-    "pw:run": "npx playwright test",
-    "pw:run-report": "PW_REPORTER=html npm run pw:run",
-    "pw:run-debug": "npx playwright test --trace on && npx playwright show-report",
     "pw:open-debug": "PWDEBUG=1 npx playwright test --ui",
+    "pw:run": "npx playwright test",
+    "pw:run-debug": "npx playwright test --trace on && npx playwright show-report",
     "pw:trace": "npx playwright show-trace",
     "pw:clear": "rm -rf test-results playwright-report playwright/.cache",
     "pw:codegen": "npx playwright codegen"
