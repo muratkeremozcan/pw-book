@@ -18,6 +18,6 @@ test('Upload Multiple files', async ({ page }) => {
     'uploadFile/uploadFile1.png',
     'uploadFile/uploadFile2.png'
   ])
-  expect(await page.locator('p.name').nth(0)).toHaveText('uploadFile1.png')
-  expect(await page.locator('p.name').nth(1)).toHaveText('uploadFile2.png')
+  await expect(page.locator('p.name').nth(0)).toHaveText('uploadFile1.png')
+  await expect(page.locator('p.name').nth(1)).toHaveText('uploadFile2.png')
 })
