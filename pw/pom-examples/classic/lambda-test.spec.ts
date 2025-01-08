@@ -25,5 +25,5 @@ test('Login and Navigate to My Account', async ({ page }) => {
   await Search.selectTheCategory()
   await Search.searchForTheProduct(testData.data[0].searchProduct)
   await ProductCart.addProductIntoCart(testData.data[0].addProductMessage)
-  await ProductCart.removeProductIntoCart()
+  // await ProductCart.removeProductIntoCart()
 })

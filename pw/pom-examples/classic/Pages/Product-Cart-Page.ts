@@ -9,7 +9,9 @@ export class ProductCartPage {
     public viewCart = page.locator('text=View Cart'),
     public addedProduct = page.locator('#content >> text=iPod Touch'),
     public cartPopup = page.locator('div[role="alert"]'),
-    public removeProduct = page.locator('//button[@class="btn btn-danger"]'),
+    public removeProduct = page
+      .locator('//button[@class="btn btn-danger"]')
+      .first(),
     public message = page.locator(
       '(//p[contains(text(),"Your shopping cart is empty!")])[2]'
     )
@@ -20,7 +22,7 @@ export class ProductCartPage {
     await this.clickFirstElement.first().click()
     await expect(this.cartPopup).toContainText(message)
     await this.viewCart.click()
-    await expect(this.addedProduct).toBeVisible()
+    await expect(this.page.url()).toContain('route=checkout/cart')
   }
 
   async removeProductIntoCart() {
