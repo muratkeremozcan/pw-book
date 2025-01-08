@@ -4,7 +4,7 @@ import fs from 'node:fs'
 test('Download Multiple files', async ({ page }) => {
   await page.goto('https://the-internet.herokuapp.com/download')
 
-  const downloadFiles = ['some-file.txt', 'black.jpg']
+  const downloadFiles = ['test.pdf', 'empty.txt']
 
   for (const fileName of downloadFiles) {
     const [download] = await Promise.all([
