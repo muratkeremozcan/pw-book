@@ -1,4 +1,4 @@
-import { test } from './fixtures'
+import { test } from './fixtures/talent-fixture'
 
 test('Login test', async ({ LoginPage }) => {
   await LoginPage.openLoginPage()
