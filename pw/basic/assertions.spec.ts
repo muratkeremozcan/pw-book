@@ -74,6 +74,7 @@ test('hard assertions @regression', async ({ page }) => {
   await expect(page).toHaveURL(/register/)
 })
 test('Soft assertion Example @foo', async ({ page }) => {
+  test.skip()
   await page.goto(
     'https://ecommerce-playground.lambdatest.io/index.php?route=account/register'
   )

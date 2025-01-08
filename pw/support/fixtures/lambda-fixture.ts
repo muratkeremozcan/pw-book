@@ -1,8 +1,8 @@
 import { test as base } from '@playwright/test'
-import { ProductCartPage } from '../../classic/Pages/Product-Cart-Page'
-import { HomePage } from '../../classic/Pages/Home-Page'
-import { LoginPage } from '../../classic/Pages/Login-Page'
-import { SearchPage } from '../../classic/Pages/Search-Page'
+import { ProductCartPage } from '../../pom-examples/classic/Pages/Product-Cart-Page'
+import { HomePage } from '../../pom-examples/classic/Pages/Home-Page'
+import { LoginPage } from '../../pom-examples/classic/Pages/Login-Page'
+import { SearchPage } from '../../pom-examples/classic/Pages/Search-Page'
 export { expect } from '@playwright/test'
 
 type Methods = {

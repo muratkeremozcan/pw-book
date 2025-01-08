@@ -1,5 +1,5 @@
 import { test as base } from '@playwright/test'
-import { LoginPage } from '../../classic/Pages/Login-Page-Talent-500'
+import { LoginPage } from '../../pom-examples/classic/Pages/Login-Page-Talent-500'
 
 type Methods = {
   LoginPage: LoginPage
