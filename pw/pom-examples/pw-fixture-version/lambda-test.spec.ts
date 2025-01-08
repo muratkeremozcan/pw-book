@@ -1,4 +1,4 @@
-import { test } from '../../support/fixtures/all-fixtures'
+import { test } from '../../support/all-fixtures'
 import testData from '../classic/testData/testData.json'
 
 test('Login and Navigate to My Account', async ({
