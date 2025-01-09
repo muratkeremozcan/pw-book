@@ -4,9 +4,15 @@ import fs from 'node:fs'
 test('Download Multiple files', async ({ page }) => {
   await page.goto('https://the-internet.herokuapp.com/download')
 
-  const downloadFiles = ['test.pdf', 'empty.txt']
+  // Select the first two file links dynamically
+  const fileLinks = await page.locator('.example a').elementHandles()
 
-  for (const fileName of downloadFiles) {
+  // Get the first two elements' text content
+  const filesToDownload = await Promise.all(
+    fileLinks.slice(0, 2).map((fileLink) => fileLink.textContent())
+  )
+
+  for (const fileName of filesToDownload) {
     const [download] = await Promise.all([
       page.waitForEvent('download'),
       page.locator(`text=${fileName}`).click()
