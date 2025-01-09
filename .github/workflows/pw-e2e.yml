@@ -1,9 +1,10 @@
 name: Run e2e with pw
+
 on:
   push:
   workflow_dispatch:
 
-# if this branch is pushed back to back, cancel the older branch's workflow
+  # if this branch is pushed back to back, cancel the older branch's workflow
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
@@ -13,6 +14,11 @@ env:
 
 jobs:
   pw-e2e:
+    strategy:
+      fail-fast: false
+      matrix:
+        shardIndex: [1, 2, 3, 4]
+        shardTotal: [4]
     timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
@@ -42,14 +48,42 @@ jobs:
       - name: Install Playwright Chromium Only
         run: npx playwright install chromium
 
-      - name: Run PW e2e tests
-        run: npm run pw:run
+      - name: Run PW e2e tests (sharded)
+        run: npx playwright test --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
 
-      - uses: actions/upload-artifact@v4
+      - name: Copy trace files to blob-report
+        run: |
+          mkdir -p blob-report/trace
+          cp -r test-results/**/*.zip blob-report/trace || true
+
+      - name: Upload shard blob report
+        uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
-          name: playwright-artifacts
-          path: |
-            playwright-report/
-            test-results/
+          name: blob-report-${{ matrix.shardIndex }}
+          path: blob-report
+          retention-days: 3
+
+  merge-reports:
+    needs: pw-e2e
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download shard reports
+        uses: actions/download-artifact@v4
+        with:
+          path: all-blob-reports
+          pattern: blob-report-*
+          merge-multiple: true
+
+      - name: Merge Playwright reports
+        run: |
+          mkdir -p playwright-report/trace
+          cp -r all-blob-reports/*/trace/* playwright-report/trace || true
+          npx playwright merge-reports --reporter=html all-blob-reports
+
+      - name: Upload merged report
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
           retention-days: 3
