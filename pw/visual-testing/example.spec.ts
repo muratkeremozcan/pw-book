@@ -15,8 +15,9 @@ test('Take visual screenshot', async ({ page }) => {
   await expect(element).toHaveScreenshot('visual-subsection.png', {
     mask: [page.getByText('Get started')],
     scale: 'css',
-    maxDiffPixelRatio: 0.5 // in CI, it is a headache to get things right, I guess that's why u get AI services for visual testing...
-    // maxDiffPixels: 400,
+    // in CI, it is a headache to get things right, I guess that's why u get AI services for visual testing...
+    maxDiffPixelRatio: 0.2, // Allow up to 20% of pixels to differ
+    maxDiffPixels: 500 // Allow up to 500 pixels to differ
     // fullPage: true, // full page will rarely match...
     // stylePath: './styles/normalize.css' // Apply shared styles
   })
