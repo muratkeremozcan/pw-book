@@ -50,6 +50,15 @@ jobs:
       - name: Run PW e2e tests (sharded)
         run: npx playwright test --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
 
+      - name: Verify blob report directory
+        run: |
+          if [ -d "blob-report" ] && [ "$(ls -A blob-report)" ]; then
+            echo "blob-report directory exists and is not empty."
+          else
+            echo "blob-report directory is missing or empty."
+            exit 1
+          fi
+
       - name: Upload shard blob report
         uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
@@ -65,8 +74,9 @@ jobs:
       - name: Download shard reports
         uses: actions/download-artifact@v4
         with:
-          name: blob-report-${{ matrix.shardIndex }}
           path: all-blob-reports
+          pattern: blob-report-*
+          merge-multiple: true
 
       - name: Merge Playwright reports
         run: npx playwright merge-reports --reporter=html all-blob-reports
