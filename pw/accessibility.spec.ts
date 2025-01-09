@@ -70,11 +70,12 @@ test('Include Password Field ONLY', async ({ page }) => {
   expect(scanResults.violations).toEqual([])
 })
 
-test('Scan only the Username text field of the Login Credentials Screen', async ({
+test('Scan only the Username text field of the Login Credentials Screen, Exclude certain sections', async ({
   page
 }) => {
   const scanResults = await new AxeBuilder({ page })
     .include('#username')
+    .exclude('[data-id="tab1"]')
     .analyze()
   expect(scanResults.violations).toEqual([])
 })
@@ -84,17 +85,4 @@ test('Disable Rules login_credentials', async ({ page }) => {
     .disableRules(['region'])
     .analyze()
   expect(scanResults.violations.length).toBeGreaterThan(0)
-})
-
-test('Exclude Top Banner Section Scan', async ({ page }) => {
-  await page.goto('https://www.thetesttribe.com/my-account')
-  const scanResults = await new AxeBuilder({ page })
-    .exclude('#termly-code-snippet-support')
-    .analyze()
-  expect(scanResults.violations.length).toBeGreaterThan(0)
-
-  const scanResults2 = await new AxeBuilder({ page })
-    .exclude('[data-id="tab1"]')
-    .analyze()
-  expect(scanResults2.violations.length).toBeGreaterThan(0)
 })

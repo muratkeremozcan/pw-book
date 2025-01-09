@@ -22,7 +22,7 @@ export default defineConfig({
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: process.env.CI ? 'html' : 'list',
+  reporter: process.env.CI ? 'blob' : 'list', // us blob for sharding in CI, later it is converted to html
   // reporter: [['json', { outputFile: 'results.json' }]],
 
   timeout: 15000,
