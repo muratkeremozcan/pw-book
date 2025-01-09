@@ -9,15 +9,15 @@ test.beforeEach(async ({ page }) => {
 
 test('Take visual screenshot', async ({ page }) => {
   // Targeting subsection of the page, full page will rarely match
-  // const element = page.locator('.hero__title')
+  const element = page.locator('.hero__title')
 
   // we can check th whole page, but it becomes a headache in CI
-  await expect(page).toHaveScreenshot('visual-subsection.png', {
+  await expect(element).toHaveScreenshot('visual-subsection.png', {
     mask: [page.getByText('Get started')],
     // in CI, it is a headache to get things right, I guess that's why u get AI services for visual testing...
     maxDiffPixelRatio: 0.2, // Allow up to 20% of pixels to differ
-    maxDiffPixels: 500, // Allow up to 500 pixels to differ
-    fullPage: true // full page will rarely match...
+    maxDiffPixels: 500 // Allow up to 500 pixels to differ
+    // fullPage: true, // full page will rarely match...
     // stylePath: './styles/normalize.css' // Apply shared styles
   })
 })
