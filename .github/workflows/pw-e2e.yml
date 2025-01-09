@@ -58,7 +58,7 @@ jobs:
 
       - name: Upload shard blob report
         uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
+        if: always()
         with:
           name: blob-report-${{ matrix.shardIndex }}
           path: blob-report
@@ -66,6 +66,7 @@ jobs:
 
   merge-reports:
     needs: pw-e2e
+    if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Download shard reports
