@@ -1,9 +1,10 @@
 name: Run e2e with pw
+
 on:
   push:
   workflow_dispatch:
 
-# if this branch is pushed back to back, cancel the older branch's workflow
+  # if this branch is pushed back to back, cancel the older branch's workflow
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
@@ -50,14 +51,10 @@ jobs:
       - name: Run PW e2e tests (sharded)
         run: npx playwright test --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
 
-      - name: Verify blob report directory
+      - name: Copy trace files to blob-report
         run: |
-          if [ -d "blob-report" ] && [ "$(ls -A blob-report)" ]; then
-            echo "blob-report directory exists and is not empty."
-          else
-            echo "blob-report directory is missing or empty."
-            exit 1
-          fi
+          mkdir -p blob-report/trace
+          cp -r test-results/**/*.zip blob-report/trace || true
 
       - name: Upload shard blob report
         uses: actions/upload-artifact@v4
@@ -79,7 +76,10 @@ jobs:
           merge-multiple: true
 
       - name: Merge Playwright reports
-        run: npx playwright merge-reports --reporter=html all-blob-reports
+        run: |
+          mkdir -p playwright-report/trace
+          cp -r all-blob-reports/*/trace/* playwright-report/trace || true
+          npx playwright merge-reports --reporter=html all-blob-reports
 
       - name: Upload merged report
         uses: actions/upload-artifact@v4
