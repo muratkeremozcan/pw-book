@@ -1,18 +1,23 @@
 import { test, expect } from '@playwright/test'
 
-// Restrict to Chrome only
-test.use({ browserName: 'chromium' })
+// restrict to 1 browser, and consistent viewport
+test.use({ browserName: 'chromium', viewport: { width: 1280, height: 720 } })
 
-// the options are optional and nice for customization
-test('Take visual of full page with masking the button', async ({ page }) => {
+test.beforeEach(async ({ page }) => {
   await page.goto('https://playwright.dev/')
+})
 
-  const element = page.locator('.hero__title') // Targeting subsection of the page
+test('Take visual screenshot', async ({ page }) => {
+  // Targeting subsection of the page, full page will rarely match
+  const element = page.locator('.hero__title')
 
   // we can check th whole page, but it becomes a headache in CI
   await expect(element).toHaveScreenshot('visual-subsection.png', {
-    // fullPage: true,
     mask: [page.getByText('Get started')],
-    maxDiffPixels: 400
+    scale: 'css',
+    maxDiffPixelRatio: 0.02 // Allow up to 2% difference
+    // maxDiffPixels: 400,
+    // fullPage: true, // full page will rarely match...
+    // stylePath: './styles/normalize.css' // Apply shared styles
   })
 })
