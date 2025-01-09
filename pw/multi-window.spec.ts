@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test } from '@playwright/test'
 
 const email1 = 'ncrmeet1@yopmail.com'
 const pw1 = 'Test@1234'
@@ -7,7 +7,13 @@ const email2 = 'lambdatestnew@yopmail.com'
 const pw2 = 'Lambda123'
 
 test('Multi window', async ({ browser }) => {
+  // Define the URL pattern for the cookie consent script
+  const cookieConsentScriptPattern = '**/cookie-consent.js'
+
   const firstContext = await browser.newContext()
+  // Block consent script for the first context
+  await firstContext.route(cookieConsentScriptPattern, (route) => route.abort())
+
   const firstPage = await firstContext.newPage()
 
   await firstPage.goto('https://automationexercise.com/login')
@@ -20,6 +26,11 @@ test('Multi window', async ({ browser }) => {
   await firstPage.getByRole('button', { name: 'Login' }).click()
 
   const secondContext = await browser.newContext()
+  // Block consent script for the second context
+  await secondContext.route(cookieConsentScriptPattern, (route) =>
+    route.abort()
+  )
+
   const secondPage = await secondContext.newPage()
   await secondPage.goto(
     'https://ecommerce-playground.lambdatest.io/index.php?route=account/login'
