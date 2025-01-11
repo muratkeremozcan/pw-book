@@ -29,3 +29,20 @@ test('Disable Rules, Partial Page, tags', async ({ page }) => {
     .analyze()
   expect(scanResults.violations.length).toBeGreaterThan(0)
 })
+
+test('test aria snapshot', async ({ page }) => {
+  await expect(page.locator('body')).toMatchAriaSnapshot(`
+    - navigation "Menu":
+      - list:
+        - listitem: Community 
+        - listitem: Events 
+        - listitem: Workshops 
+        - listitem:
+          - link "Courses "
+        - listitem:
+          - link "Membership "
+        - listitem: About 
+        - listitem:
+          - link ""
+    `)
+})
