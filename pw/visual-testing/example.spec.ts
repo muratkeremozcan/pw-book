@@ -18,9 +18,11 @@ test('Take visual screenshot', async ({ page }) => {
   await expect(page).toHaveScreenshot({
     mask: [page.getByText('Get started')],
     // in CI, it is a headache to get things right, I guess that's why u get AI services for visual testing...
+    fullPage: true, // full page will rarely match...
+    // these can go to the config file so that they apply to every test
+    // https://playwright.dev/docs/test-configuration#expect-options
     maxDiffPixelRatio: 0.2, // Allow up to 20% of pixels to differ
-    maxDiffPixels: 500, // Allow up to 500 pixels to differ
-    fullPage: true // full page will rarely match...
+    maxDiffPixels: 500 // Allow up to 500 pixels to differ
     // stylePath: './styles/normalize.css' // Apply shared styles
   })
 })

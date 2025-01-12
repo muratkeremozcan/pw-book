@@ -1,78 +1,88 @@
 import { test, expect } from '@playwright/test'
-test('hard assertions @regression', async ({ page }) => {
-  await page.goto(
-    'https://ecommerce-playground.lambdatest.io/index.php?route=account/register'
-  )
-  const cickPrivacyCheckbox = page.locator("//label[@for='input-agree']")
-  await cickPrivacyCheckbox.click()
-
-  //To be checked
-  await expect(cickPrivacyCheckbox).toBeChecked()
-  const firstName = page.locator("//input[@id='input-firstname']")
-
-  //To be disabled
-  await expect(firstName).not.toBeDisabled()
-  const continueBtn = page.locator("input[value='Continue']")
-
-  //To be Editable
-  await expect(firstName).toBeEditable()
-
-  //To be Enabled
-  await expect(continueBtn).toBeEnabled()
-
-  //To be Focused
-  const focus = "//input[@id='input-firstname']"
-  await page.locator(focus).focus()
-  await expect(page.locator(focus)).toBeFocused()
-
-  //To be Visible
-  await expect(
-    page.locator("aside[id='column-right'] a:nth-child(1)")
-  ).toBeVisible()
-
-  await continueBtn.click()
-
-  //To Contain Text
-  await expect(
-    page.locator(
-      "//div[contains(text(),'First Name must be between 1 and 32 characters!')]"
+test(
+  'hard assertions @regression',
+  {
+    // annotation example https://playwright.dev/docs/test-annotations#annotate-tests
+    annotation: {
+      type: 'issue',
+      description: 'https://github.com/microsoft/playwright/issues/23180'
+    }
+  },
+  async ({ page }) => {
+    await page.goto(
+      'https://ecommerce-playground.lambdatest.io/index.php?route=account/register'
     )
-  ).toContainText('First Name must be between 1 and 32 characters!')
+    const cickPrivacyCheckbox = page.locator("//label[@for='input-agree']")
+    await cickPrivacyCheckbox.click()
 
-  //To Have Attribute
-  await expect(page.locator('#input-newsletter-no')).toHaveAttribute(
-    'type',
-    'radio'
-  )
+    //To be checked
+    await expect(cickPrivacyCheckbox).toBeChecked()
+    const firstName = page.locator("//input[@id='input-firstname']")
 
-  //To Have Class
-  await expect(page.locator('//h1')).toHaveClass('page-title h3')
+    //To be disabled
+    await expect(firstName).not.toBeDisabled()
+    const continueBtn = page.locator("input[value='Continue']")
 
-  //To Have Count
-  await expect(page.locator("//input[@class='form-control']")).toHaveCount(6)
+    //To be Editable
+    await expect(firstName).toBeEditable()
 
-  //To Have CSS
-  await expect(page.locator('#input-firstname')).toHaveCSS('display', 'block')
+    //To be Enabled
+    await expect(continueBtn).toBeEnabled()
 
-  //To Have ID
-  await expect(page.locator("//input[@name='firstname']")).toHaveId(
-    'input-firstname'
-  )
+    //To be Focused
+    const focus = "//input[@id='input-firstname']"
+    await page.locator(focus).focus()
+    await expect(page.locator(focus)).toBeFocused()
 
-  //To Have Text
-  await expect(page.locator("label[for='input-firstname']")).toHaveText(
-    'First Name'
-  )
+    //To be Visible
+    await expect(
+      page.locator("aside[id='column-right'] a:nth-child(1)")
+    ).toBeVisible()
 
-  //To Have Value
-  await expect(page.locator('#input-newsletter-yes')).toHaveValue('1')
+    await continueBtn.click()
 
-  //To have Title
-  await expect(page).toHaveTitle('Register Account')
+    //To Contain Text
+    await expect(
+      page.locator(
+        "//div[contains(text(),'First Name must be between 1 and 32 characters!')]"
+      )
+    ).toContainText('First Name must be between 1 and 32 characters!')
 
-  //To have URL
-  await expect(page).toHaveURL(/register/)
-})
+    //To Have Attribute
+    await expect(page.locator('#input-newsletter-no')).toHaveAttribute(
+      'type',
+      'radio'
+    )
+
+    //To Have Class
+    await expect(page.locator('//h1')).toHaveClass('page-title h3')
+
+    //To Have Count
+    await expect(page.locator("//input[@class='form-control']")).toHaveCount(6)
+
+    //To Have CSS
+    await expect(page.locator('#input-firstname')).toHaveCSS('display', 'block')
+
+    //To Have ID
+    await expect(page.locator("//input[@name='firstname']")).toHaveId(
+      'input-firstname'
+    )
+
+    //To Have Text
+    await expect(page.locator("label[for='input-firstname']")).toHaveText(
+      'First Name'
+    )
+
+    //To Have Value
+    await expect(page.locator('#input-newsletter-yes')).toHaveValue('1')
+
+    //To have Title
+    await expect(page).toHaveTitle('Register Account')
+
+    //To have URL
+    await expect(page).toHaveURL(/register/)
+  }
+)
 test('Soft assertion Example @foo', async ({ page }) => {
   test.skip()
   await page.goto(
