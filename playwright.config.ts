@@ -89,3 +89,15 @@ export default defineConfig({
   //   reuseExistingServer: !process.env.CI,
   // },
 })
+
+/*
+
+  // potential setup for runners with higher resources
+  const os = require('os')
+  const isCI = process.env.CI === 'true'
+
+  const config = {
+    workers: isCI ? Math.min(os.cpus().length, 4) : undefined, // Limit to 4 workers in CI
+  };
+
+  */
