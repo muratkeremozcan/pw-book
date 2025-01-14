@@ -25,7 +25,7 @@ export default defineConfig({
   // use blob for sharding in CI, later it is converted to html
   // for local use list, but in debug mode give the html report too
   reporter: process.env.CI
-    ? 'blob'
+    ? [['blob'], ['github']]
     : process.env.PW_HTML_REPORT
       ? [['list'], ['html']]
       : 'list',
