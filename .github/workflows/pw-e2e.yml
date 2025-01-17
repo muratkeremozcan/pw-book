@@ -1,95 +1,101 @@
-name: PR E2E Checks
+name: 'Run e2e with pw'
 
 on:
   pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
-  detect-changes:
-    runs-on: ubuntu-latest
-    outputs:
-      found_changed: ${{ steps.diff-check.outputs.found_changed }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          # So we can do a proper diff against base
-          fetch-depth: 0
+  # 1) Detect changes + run burn-in if needed
+  detect-changes-and-burn-in:
+    uses: ./.github/workflows/burn-in-reusable.yml
+    with:
+      base-ref: ${{ github.base_ref }}
+    secrets:
+      github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - id: diff-check
-        run: |
-          # Compare HEAD with the PR’s base branch
-          git fetch origin ${{ github.base_ref }} --depth=1
-          changed_files=$(git diff --name-only origin/${{ github.base_ref }} HEAD)
-
-          echo "Changed files:"
-          echo "$changed_files"
-
-          # Check if anything in 'pw/' folder changed with .spec.ts or .test.ts
-          if echo "$changed_files" | grep -Eq '^pw/.*\.(spec|test)\.ts'; then
-            echo "found_changed=true"
-            echo "::set-output name=found_changed::true"
-          else
-            echo "found_changed=false"
-            echo "::set-output name=found_changed::false"
-          fi
-
-  pw-burn-in:
-    # Only run if detect-changes says 'true'
-    needs: [detect-changes]
-    if: ${{ needs.detect-changes.outputs.found_changed == 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Read Node version from .nvmrc
-        run: echo "NODE_VERSION=$(cat .nvmrc)" >> $GITHUB_ENV
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Playwright (Chromium only)
-        run: npx playwright install chromium
-
-      - name: Run Burn-in
-        # If this fails (exit code != 0), the job status is “failure.”
-        run: |
-          npx playwright test \
-            --only-changed=${{ github.base_ref }} \
-            --repeat-each=5 \
-            --retries=0
-
+  # 2) E2E matrix
   pw-e2e:
-    needs:
-      - detect-changes
-      - pw-burn-in
-    # Always evaluate this job, but only skip if Burn-in actually ran and failed.
-    # If Burn-in was skipped, that’s not a “failure,” so we proceed.
-    if: ${{ always() && (needs.pw-burn-in.result != 'failure') }}
+    needs: [detect-changes-and-burn-in]
+    if: ${{ needs.detect-changes-and-burn-in.outputs.runE2E == 'true' }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shardIndex: [1, 2, 3, 4]
+        shardTotal: [4]
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
 
       - name: Read Node version from .nvmrc
+        id: node_version
         run: echo "NODE_VERSION=$(cat .nvmrc)" >> $GITHUB_ENV
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+
+      - name: Cache Playwright Browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Playwright (Chromium only)
+      - name: Install Playwright Chromium Only
         run: npx playwright install chromium
 
-      - name: Run Full E2E
-        run: npx playwright test
+      - name: Run PW e2e tests (sharded)
+        run: npx playwright test --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+
+      - name: Copy trace files to blob-report
+        run: |
+          mkdir -p blob-report/trace
+          cp -r test-results/**/*.zip blob-report/trace || true
+
+      - name: Upload shard blob report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: blob-report-${{ matrix.shardIndex }}
+          path: blob-report
+          retention-days: 3
+
+  # 3) Merge reports from all shards
+  merge-reports:
+    needs: pw-e2e
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download shard reports
+        uses: actions/download-artifact@v4
+        with:
+          path: all-blob-reports
+          pattern: blob-report-*
+          merge-multiple: true
+
+      - name: Merge Playwright reports
+        run: |
+          mkdir -p playwright-report/trace
+          cp -r all-blob-reports/*/trace/* playwright-report/trace || true
+          npx playwright merge-reports --reporter=html all-blob-reports
+
+      - name: Upload merged report
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 3
