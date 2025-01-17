@@ -12,8 +12,17 @@ concurrency:
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+# Skip burn-in if no test files changed, but still run e2e
+# Run e2e if burn-in passes
+# Skip e2e if burn-in fails
+
 jobs:
+  burn-in:
+    uses: ./.github/workflows/burn-in-reusable.yml
+
   pw-e2e:
+    needs: burn-in
+    if: needs.burn-in.outputs.runE2E == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -22,6 +31,10 @@ jobs:
     timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
+      - name: Debug Output
+        run: |
+          echo "runE2E value: ${{ needs.burn-in.outputs.runE2E }}"
+
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
@@ -65,8 +78,9 @@ jobs:
           retention-days: 3
 
   merge-reports:
-    needs: pw-e2e
-    if: always()
+    needs: [pw-e2e]
+    # even if the previous jobs in the needs: list failed, still run this job
+    if: always() && needs.burn-in.outputs.runE2E == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Download shard reports
