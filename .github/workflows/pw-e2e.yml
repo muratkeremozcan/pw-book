@@ -1,9 +1,10 @@
-name: 'Run e2e with pw'
+name: Run e2e with pw
 
 on:
-  pull_request:
+  push:
   workflow_dispatch:
 
+  # if this branch is pushed back to back, cancel the older branch's workflow
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
@@ -11,30 +12,32 @@ concurrency:
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+# Skip burn-in if no test files changed, but still run e2e
+# Run e2e if burn-in passes
+# Skip e2e if burn-in fails
+
 jobs:
-  # 1) Detect changes + run burn-in if needed
-  detect-changes-and-burn-in:
+  burn-in:
     uses: ./.github/workflows/burn-in-reusable.yml
-    with:
-      base-ref: ${{ github.base_ref }}
     secrets:
       github-token: ${{ secrets.GITHUB_TOKEN }}
+    with:
+      base-ref: main
 
-  # 2) E2E matrix
   pw-e2e:
-    needs: [detect-changes-and-burn-in]
-    if: ${{ needs.detect-changes-and-burn-in.outputs.runE2E == 'true' }}
-    runs-on: ubuntu-latest
+    needs: burn-in
+    if: needs.burn-in.outputs.runE2E == 'true'
     strategy:
       fail-fast: false
       matrix:
         shardIndex: [1, 2, 3, 4]
         shardTotal: [4]
     timeout-minutes: 10
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.ref }}
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Read Node version from .nvmrc
         id: node_version
@@ -74,7 +77,6 @@ jobs:
           path: blob-report
           retention-days: 3
 
-  # 3) Merge reports from all shards
   merge-reports:
     needs: pw-e2e
     if: always()
