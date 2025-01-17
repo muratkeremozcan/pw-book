@@ -2,7 +2,6 @@ name: 'Run e2e with pw'
 
 on:
   push:
-  pull_request:
   workflow_dispatch:
 
 # If you push multiple commits in quick succession, cancel older runs
