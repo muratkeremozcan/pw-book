@@ -1,10 +1,11 @@
-name: Run e2e with pw
+name: 'Run e2e with pw'
 
 on:
   push:
+  pull_request:
   workflow_dispatch:
 
-# If this branch is pushed back-to-back, cancel the older branch's workflow
+# If you push multiple commits in quick succession, cancel older runs
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
@@ -13,93 +14,31 @@ env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
+  # 1) Burn-in job (only runs on pull_request)
   pw-burn-in:
-    # Run this only on PRs, so we actually have a 'base ref' to compare against
     if: ${{ github.event_name == 'pull_request' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          # Must fetch full history so that --only-changed works correctly.
-          fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha }}
+    uses: ./.github/workflows/burn-in-reusable.yml
+    with:
+      # We'll pass in the base ref from the PR, e.g. "main"
+      # Some orgs do "develop" or other branches. Adjust as needed.
+      base-ref: ${{ github.base_ref }}
+    secrets:
+      github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Detect changed E2E test files
-        id: detect-changed
-        run: |
-          # We'll compare PR's HEAD to base ref. "github.base_ref" is typically "main" or whatever your PR merges into.
-          git fetch origin ${{ github.base_ref }} --depth=1
-          changed_files=$(git diff --name-only origin/${{ github.base_ref }} HEAD)
-
-          echo "==== Changed files detected ===="
-          echo "$changed_files"
-
-          # Check if anything in the 'pw/' folder changed,
-          # especially .spec.ts or .test.ts files. Adjust the pattern as needed.
-          if echo "$changed_files" | grep -E '^pw/.*\.(spec|test)\.ts'; then
-            echo "found_changed=true" >> $GITHUB_ENV
-          else
-            echo "found_changed=false" >> $GITHUB_ENV
-          fi
-
-      - name: Skip burn-in if no E2E files changed
-        if: env.found_changed == 'false'
-        run: |
-          echo "No E2E test files changed. Skipping burn-in step."
-          # We'll exit right away, so the remaining steps won't run.
-          exit 0
-
-      - name: Read Node version from .nvmrc
-        if: env.found_changed == 'true'
-        id: node_version
-        run: echo "NODE_VERSION=$(cat .nvmrc)" >> $GITHUB_ENV
-
-      - name: Setup Node
-        if: env.found_changed == 'true'
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Cache Playwright Browsers
-        if: env.found_changed == 'true'
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ github.sha }}
-          restore-keys: |
-            playwright-${{ runner.os }}-
-
-      - name: Install dependencies
-        if: env.found_changed == 'true'
-        run: npm ci
-
-      - name: Install Playwright Chromium Only
-        if: env.found_changed == 'true'
-        run: npx playwright install chromium
-
-      - name: Burn-in changed Playwright tests (repeat 5 times, no retries)
-        if: env.found_changed == 'true'
-        run: |
-          npx playwright test \
-            --only-changed=${{ github.base_ref }} \
-            --repeat-each=5 \
-            --retries=0 \
-            --pass-with-no-tests
-
+  # 2) Full E2E job
   pw-e2e:
-    # This job depends on the burn-in finishing (or being skipped), so we allow it to proceed either way.
+    # Wait for the burn-in job to finish or skip
     needs: [pw-burn-in]
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         shardIndex: [1, 2, 3, 4]
         shardTotal: [4]
-    timeout-minutes: 10
-    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          # For PRs, still check out the PR head. For merges to main (push), this is also valid.
+          # For PRs: checkout PR head. For push: checkout that commit.
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
 
       - name: Read Node version from .nvmrc
@@ -140,6 +79,7 @@ jobs:
           path: blob-report
           retention-days: 3
 
+  # 3) Merge the reports
   merge-reports:
     needs: pw-e2e
     if: always()

@@ -1,0 +1,69 @@
+name: 'Burn In Reusable Workflow'
+
+# This will NOT trigger on push or pull_request by itself.
+# It only runs when called from another workflow via "uses: ./.github/workflows/burn-in-reusable.yml".
+on:
+  workflow_call:
+    inputs:
+      base-ref:
+        type: string
+        description: 'Base ref to compare changed files with HEAD'
+        required: false
+        default: 'main' # Adjust if your default branch is different (e.g. "develop").
+    secrets:
+      github-token:
+        required: true
+
+jobs:
+  burn-in:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Must fetch full history so that --only-changed works accurately
+          fetch-depth: 0
+
+      - name: Detect changed E2E test files
+        id: detect-changed
+        run: |
+          # Compare HEAD to the 'base-ref' input. We'll fetch just that branch's tip (depth=1).
+          git fetch origin ${{ inputs.base-ref }} --depth=1
+          changed_files=$(git diff --name-only origin/${{ inputs.base-ref }} HEAD)
+
+          echo "==== Changed files detected ===="
+          echo "$changed_files"
+
+          # For example, check if anything in 'pw/' folder changed with .spec.ts or .test.ts
+          if echo "$changed_files" | grep -E '^pw/.*\.(spec|test)\.ts'; then
+            echo "found_changed=true" >> $GITHUB_ENV
+          else
+            echo "found_changed=false" >> $GITHUB_ENV
+          fi
+
+      - name: Skip burn-in if no E2E files changed
+        if: env.found_changed == 'false'
+        run: |
+          echo "No E2E test files changed. Skipping burn-in step."
+          exit 0
+
+      - name: Read Node version from .nvmrc
+        run: echo "NODE_VERSION=$(cat .nvmrc)" >> $GITHUB_ENV
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright (Chromium only)
+        run: npx playwright install chromium
+
+      - name: Run Burn-in (repeat 5x, no retries)
+        run: |
+          npx playwright test \
+            --only-changed=${{ inputs.base-ref }} \
+            --repeat-each=5 \
+            --retries=0 \
+            --pass-with-no-tests
