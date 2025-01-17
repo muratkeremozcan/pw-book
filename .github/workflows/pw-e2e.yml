@@ -79,28 +79,28 @@ jobs:
           path: blob-report
           retention-days: 3
 
-  # 3) Merge the reports
-  merge-reports:
-    needs: [pw-burn-in, pw-e2e]
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download shard reports
-        uses: actions/download-artifact@v4
-        with:
-          path: all-blob-reports
-          pattern: blob-report-*
-          merge-multiple: true
+  # # 3) Merge the reports
+  # merge-reports:
+  #   needs: [pw-burn-in, pw-e2e]
+  #   if: always()
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Download shard reports
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         path: all-blob-reports
+  #         pattern: blob-report-*
+  #         merge-multiple: true
 
-      - name: Merge Playwright reports
-        run: |
-          mkdir -p playwright-report/trace
-          cp -r all-blob-reports/*/trace/* playwright-report/trace || true
-          npx playwright merge-reports --reporter=html all-blob-reports
+  #     - name: Merge Playwright reports
+  #       run: |
+  #         mkdir -p playwright-report/trace
+  #         cp -r all-blob-reports/*/trace/* playwright-report/trace || true
+  #         npx playwright merge-reports --reporter=html all-blob-reports
 
-      - name: Upload merged report
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report
-          path: playwright-report
-          retention-days: 3
+  #     - name: Upload merged report
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: playwright-report
+  #         path: playwright-report
+  #         retention-days: 3
