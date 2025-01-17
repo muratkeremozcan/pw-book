@@ -15,20 +15,20 @@ env:
 
 jobs:
   # 1) Burn-in job (only runs on pull_request)
-  # pw-burn-in:
-  #   if: ${{ github.event_name == 'pull_request' }}
-  #   uses: ./.github/workflows/burn-in-reusable.yml
-  #   with:
-  #     # We'll pass in the base ref from the PR, e.g. "main"
-  #     # Some orgs do "develop" or other branches. Adjust as needed.
-  #     base-ref: ${{ github.base_ref }}
-  #   secrets:
-  #     github-token: ${{ secrets.GITHUB_TOKEN }}
+  pw-burn-in:
+    if: ${{ github.event_name == 'pull_request' }}
+    uses: ./.github/workflows/burn-in-reusable.yml
+    with:
+      # We'll pass in the base ref from the PR, e.g. "main"
+      # Some orgs do "develop" or other branches. Adjust as needed.
+      base-ref: ${{ github.base_ref }}
+    secrets:
+      github-token: ${{ secrets.GITHUB_TOKEN }}
 
   # 2) Full E2E job
   pw-e2e:
     # Wait for the burn-in job to finish or skip
-    # needs: [pw-burn-in]
+    needs: [pw-burn-in]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -81,7 +81,7 @@ jobs:
 
   # 3) Merge the reports
   merge-reports:
-    needs: pw-e2e
+    needs: [pw-burn-in, pw-e2e]
     if: always()
     runs-on: ubuntu-latest
     steps:
