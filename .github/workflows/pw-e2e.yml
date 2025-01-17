@@ -35,6 +35,10 @@ jobs:
     timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
+      - name: Debug Output
+        run: |
+          echo "runE2E value: ${{ needs.burn-in.outputs.runE2E }}"
+
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}

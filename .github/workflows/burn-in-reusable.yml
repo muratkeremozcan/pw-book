@@ -2,6 +2,10 @@ name: 'Detect-and-Burnin Reusable'
 
 on:
   workflow_call:
+    outputs:
+      runE2E:
+        description: "Whether to run E2E tests"
+        value: ${{ jobs.detect-and-burn-in.outputs.runE2E }}
     secrets:
       github-token:
         required: true
@@ -75,6 +79,7 @@ jobs:
           # If no test files changed, we should run E2E
           if [ "${{ env.found_changed }}" = "false" ]; then
             echo "runE2E=true" >> $GITHUB_OUTPUT
+            echo "Debug: No test files changed, setting runE2E=true"
             exit 0
           fi
 
@@ -82,7 +87,9 @@ jobs:
           if [ "${{ steps.burn-in-step.outcome }}" = "failure" ]; then
             echo "Burn-in failed => We'll skip E2E."
             echo "runE2E=false" >> $GITHUB_OUTPUT
+            echo "Debug: Burn-in failed, setting runE2E=false"
           else
             # Burn-in succeeded => we run E2E
             echo "runE2E=true" >> $GITHUB_OUTPUT
+            echo "Debug: Burn-in succeeded, setting runE2E=true"
           fi
