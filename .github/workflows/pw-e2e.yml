@@ -83,6 +83,7 @@ jobs:
 
   merge-reports:
     needs: [pw-e2e]
+    # even if the previous jobs in the needs: list failed, still run this job
     if: always() && needs.burn-in.outputs.runE2E == 'true'
     runs-on: ubuntu-latest
     steps:
