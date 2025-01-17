@@ -71,8 +71,11 @@ jobs:
           fi
 
           echo "Found changed E2E files. Running burn-in..."
+          # Create a local main branch tracking origin/main
+          git branch -f main origin/main
+
           npx playwright test \
-            --only-changed=${{ inputs.base-ref }} \
+            --only-changed=main \
             --repeat-each=5 \
             --retries=0
 
