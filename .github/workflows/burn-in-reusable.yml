@@ -72,17 +72,17 @@ jobs:
       - name: Decide if we run E2E or not
         id: set-runE2E
         run: |
-          # If 'found_changed=false', we never ran burn-in, so no reason to skip E2E. We'll run it => set runE2E=true
+          # If no test files changed, we should run E2E
           if [ "${{ env.found_changed }}" = "false" ]; then
-            echo "::set-output name=runE2E::true"
+            echo "runE2E=true" >> $GITHUB_OUTPUT
             exit 0
           fi
 
           # If we DID run burn-in, check if it failed
           if [ "${{ steps.burn-in-step.outcome }}" = "failure" ]; then
             echo "Burn-in failed => We'll skip E2E."
-            echo "::set-output name=runE2E::false"
+            echo "runE2E=false" >> $GITHUB_OUTPUT
           else
             # Burn-in succeeded => we run E2E
-            echo "::set-output name=runE2E::true"
+            echo "runE2E=true" >> $GITHUB_OUTPUT
           fi

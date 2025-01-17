@@ -78,8 +78,11 @@ jobs:
           retention-days: 3
 
   merge-reports:
-    needs: pw-e2e
-    if: always()
+    needs: [pw-e2e, burn-in]
+    if: |
+      always() &&
+      (needs.burn-in.outputs.runE2E == 'true' && needs.pw-e2e.result == 'success') ||
+      (needs.burn-in.outputs.runE2E == 'true' && needs.pw-e2e.result == 'failure')
     runs-on: ubuntu-latest
     steps:
       - name: Download shard reports
