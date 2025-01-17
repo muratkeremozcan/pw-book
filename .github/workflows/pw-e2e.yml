@@ -19,10 +19,6 @@ env:
 jobs:
   burn-in:
     uses: ./.github/workflows/burn-in-reusable.yml
-    secrets:
-      github-token: ${{ secrets.GITHUB_TOKEN }}
-    with:
-      base-ref: main
 
   pw-e2e:
     needs: burn-in

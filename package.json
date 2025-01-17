@@ -20,7 +20,9 @@
     "pw:trace": "npx playwright show-trace",
     "pw:clear": "rm -rf test-results playwright-report playwright/.cache",
     "pw:codegen": "npx playwright codegen",
-    "pw:run-smoke": "npm run pw:run -- --grep @foo"
+    "pw:run-smoke": "npm run pw:run -- --grep @foo",
+    "pw:burn-in": "npx playwright test --repeat-each=10 --retries=0",
+    "pw:burn-in-changed": "npx playwright test --only-changed=main --repeat-each=10 --retries=0"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.10.1",

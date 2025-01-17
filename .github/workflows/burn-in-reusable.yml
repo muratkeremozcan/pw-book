@@ -1,14 +1,11 @@
-name: 'Detect-and-Burnin Reusable'
+name: 'Burn-in reusable workflow'
 
 on:
   workflow_call:
     outputs:
       runE2E:
         description: 'Whether to run E2E tests'
-        value: ${{ jobs.detect-and-burn-in.outputs.runE2E }}
-    secrets:
-      github-token:
-        required: true
+        value: ${{ jobs.rwf.outputs.runE2E }}
     inputs:
       base-ref:
         type: string
@@ -17,7 +14,7 @@ on:
         default: 'main'
 
 jobs:
-  detect-and-burn-in:
+  rwf:
     runs-on: ubuntu-latest
 
     outputs:

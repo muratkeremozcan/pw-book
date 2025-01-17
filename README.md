@@ -14,4 +14,7 @@ npm run pw:trace      # drag & drop a trace.zip from local or CI
 npm run pw:codegen    # point-and-click wizard
 npm run pw:clear      # remove all temporary pw files
 npm run pw:run-smoke  # grep run by tag
+npm run pw:burn-in-changed # the new/changed files in this commit (recommended)
+npm run pw:burn-in -- pw/iframe.spec.ts # test burn-in: specific file
+npm run pw:burn-in -- --grep "dropdown" # Run burn-in with pattern
 ```
