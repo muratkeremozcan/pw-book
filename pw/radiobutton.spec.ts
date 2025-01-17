@@ -18,4 +18,4 @@ test('LambdaTest Playground Example  ', async ({ page }) => {
   expect(await radioButton('Male').isChecked()).toBeFalsy() // same thing
 })
 
-// test burn in
+// test burn
