@@ -18,33 +18,44 @@ jobs:
     runs-on: ubuntu-latest
 
     outputs:
-      # We'll set this in a step below. It's either 'true' or 'false'.
       runE2E: ${{ steps.set-runE2E.outputs.runE2E }}
 
     steps:
+      # 1) Minimal checkout to detect changes
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha }} #  ensure we're checking out the correct commit
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Detect changed E2E test files
         id: detect-changed
         run: |
-          # Fetch main branch explicitly
-          git remote set-branches --add origin main
-          git fetch origin main
-          changed_files=$(git diff --name-only origin/main HEAD)
+          # Compare HEAD with the "base-ref" branch
+          git fetch origin ${{ inputs.base-ref }} --depth=1
+          changed_files=$(git diff --name-only origin/${{ inputs.base-ref }} HEAD)
 
           echo "Changed files:"
           echo "$changed_files"
 
-          # We store 'true' or 'false' in an environment variable
+          # We'll store 'true' or 'false' in an env var
           if echo "$changed_files" | grep -Eq '^pw/.*\.(spec|test)\.ts'; then
             echo "found_changed=true" >> $GITHUB_ENV
           else
             echo "found_changed=false" >> $GITHUB_ENV
           fi
 
+      # 2) If no files changed, set runE2E = true (so the main E2E can still run),
+      #    then exit immediately so we don't do any installs or burn-in.
+      - name: Skip burn-in if no E2E changes
+        id: skip-if-none
+        run: |
+          if [ "${{ env.found_changed }}" = "false" ]; then
+            echo "runE2E=true" >> $GITHUB_OUTPUT
+            echo "No E2E test files changed => skipping burn-in, but E2E can still proceed."
+            exit 0
+          fi
+
+      # 3) If we got here, we have changed test files => do burn-in.
       - name: Read Node version from .nvmrc
         run: echo "NODE_VERSION=$(cat .nvmrc)" >> $GITHUB_ENV
 
@@ -60,15 +71,10 @@ jobs:
         run: npx playwright install chromium
 
       - name: Run Burn-in
-        id: burn-in-step
+        id: burnin-step
         run: |
-          if [ "${{ env.found_changed }}" == "false" ]; then
-            echo "No E2E test files changed. Skipping burn-in."
-            exit 0
-          fi
-
           echo "Found changed E2E files. Running burn-in..."
-          # Create a local main branch tracking origin/main
+          # Ensure local branch "main" tracks origin/main
           git branch -f main origin/main
 
           npx playwright test \
@@ -79,20 +85,10 @@ jobs:
       - name: Decide if we run E2E or not
         id: set-runE2E
         run: |
-          # If no test files changed, we should run E2E
-          if [ "${{ env.found_changed }}" = "false" ]; then
-            echo "runE2E=true" >> $GITHUB_OUTPUT
-            echo "Debug: No test files changed, setting runE2E=true"
-            exit 0
-          fi
-
-          # If we DID run burn-in, check if it failed
-          if [ "${{ steps.burn-in-step.outcome }}" = "failure" ]; then
+          if [ "${{ steps.burnin-step.outcome }}" = "failure" ]; then
             echo "Burn-in failed => We'll skip E2E."
             echo "runE2E=false" >> $GITHUB_OUTPUT
-            echo "Debug: Burn-in failed, setting runE2E=false"
           else
-            # Burn-in succeeded => we run E2E
+            echo "Burn-in succeeded => we do E2E."
             echo "runE2E=true" >> $GITHUB_OUTPUT
-            echo "Debug: Burn-in succeeded, setting runE2E=true"
           fi
