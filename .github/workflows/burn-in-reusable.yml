@@ -1,11 +1,11 @@
-name: 'Burn-in reusable workflow'
+name: 'Detect-and-Burn-in Reusable'
 
 on:
   workflow_call:
     outputs:
       runE2E:
         description: 'Whether to run E2E tests'
-        value: ${{ jobs.rwf.outputs.runE2E }}
+        value: ${{ jobs.detect-changes.outputs.runE2E }}
     inputs:
       base-ref:
         type: string
@@ -14,36 +14,57 @@ on:
         default: 'main'
 
 jobs:
-  rwf:
+  detect-changes:
     runs-on: ubuntu-latest
-
     outputs:
-      # We'll set this in a step below. It's either 'true' or 'false'.
       runE2E: ${{ steps.set-runE2E.outputs.runE2E }}
+      shouldBurnIn: ${{ steps.detect-changed.outputs.shouldBurnIn }}
 
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha }} #  ensure we're checking out the correct commit
+          ref: ${{ github.event.pull_request.head.sha }} # ensure we're checking out the correct commit
 
       - name: Detect changed E2E test files
         id: detect-changed
         run: |
-          # Fetch main branch explicitly
-          git remote set-branches --add origin main
-          git fetch origin main
-          changed_files=$(git diff --name-only origin/main HEAD)
+          # Fetch base branch explicitly
+          git remote set-branches --add origin ${{ inputs.base-ref }}
+          git fetch origin ${{ inputs.base-ref }}
+          changed_files=$(git diff --name-only origin/${{ inputs.base-ref }} HEAD)
 
           echo "Changed files:"
           echo "$changed_files"
 
-          # We store 'true' or 'false' in an environment variable
           if echo "$changed_files" | grep -Eq '^pw/.*\.(spec|test)\.ts'; then
-            echo "found_changed=true" >> $GITHUB_ENV
+            echo "shouldBurnIn=true" >> $GITHUB_OUTPUT
+            echo "Found test file changes => will run burn-in"
           else
-            echo "found_changed=false" >> $GITHUB_ENV
+            echo "shouldBurnIn=false" >> $GITHUB_OUTPUT
+            echo "No test file changes => will skip burn-in"
           fi
+
+      - name: Set runE2E output
+        id: set-runE2E
+        run: |
+          if [ "${{ steps.detect-changed.outputs.shouldBurnIn }}" = "false" ]; then
+            echo "runE2E=true" >> $GITHUB_OUTPUT
+            echo "No E2E test files changed => skipping burn-in, but E2E can still proceed."
+          else
+            echo "runE2E=true" >> $GITHUB_OUTPUT
+            echo "Test files changed => will run burn-in, E2E depends on its outcome"
+          fi
+
+  burn-in-rwf:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.shouldBurnIn == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Read Node version from .nvmrc
         run: echo "NODE_VERSION=$(cat .nvmrc)" >> $GITHUB_ENV
@@ -62,37 +83,21 @@ jobs:
       - name: Run Burn-in
         id: burn-in-step
         run: |
-          if [ "${{ env.found_changed }}" == "false" ]; then
-            echo "No E2E test files changed. Skipping burn-in."
-            exit 0
-          fi
-
-          echo "Found changed E2E files. Running burn-in..."
-          # Create a local main branch tracking origin/main
-          git branch -f main origin/main
+          # Create a local branch tracking origin/base-ref
+          git branch -f ${{ inputs.base-ref }} origin/${{ inputs.base-ref }}
 
           npx playwright test \
-            --only-changed=main \
-            --repeat-each=5 \
+            --only-changed=${{ inputs.base-ref }} \
+            --repeat-each=10 \
             --retries=0
 
-      - name: Decide if we run E2E or not
-        id: set-runE2E
+      - name: Update runE2E based on burn-in result
+        if: always()
         run: |
-          # If no test files changed, we should run E2E
-          if [ "${{ env.found_changed }}" = "false" ]; then
+          if [ "${{ steps.burn-in-step.outcome }}" = "success" ]; then
             echo "runE2E=true" >> $GITHUB_OUTPUT
-            echo "Debug: No test files changed, setting runE2E=true"
-            exit 0
-          fi
-
-          # If we DID run burn-in, check if it failed
-          if [ "${{ steps.burn-in-step.outcome }}" = "failure" ]; then
-            echo "Burn-in failed => We'll skip E2E."
-            echo "runE2E=false" >> $GITHUB_OUTPUT
-            echo "Debug: Burn-in failed, setting runE2E=false"
+            echo "Burn-in passed => E2E can proceed"
           else
-            # Burn-in succeeded => we run E2E
-            echo "runE2E=true" >> $GITHUB_OUTPUT
-            echo "Debug: Burn-in succeeded, setting runE2E=true"
+            echo "runE2E=false" >> $GITHUB_OUTPUT
+            echo "Burn-in failed => E2E will be skipped"
           fi
