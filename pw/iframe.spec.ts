@@ -9,5 +9,3 @@ test('Iframe', async ({ page }) => {
   await textArea.fill('foo')
   await expect(textArea).toHaveText('foo')
 })
-
-// test burn in
