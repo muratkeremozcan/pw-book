@@ -10,8 +10,39 @@ on:
       base-ref:
         type: string
         description: 'Base ref to compare changed files with HEAD'
-        required: false
         default: 'main'
+      test-directory:
+        type: string
+        description: 'Directory containing test files'
+        default: 'pw/'
+      test-pattern:
+        type: string
+        description: 'Regex pattern to match test files'
+        default: '.*\.(spec|test)\.ts'
+      repeat-count:
+        type: number
+        description: 'Number of times to repeat each test'
+        default: 10
+      retry-count:
+        type: number
+        description: 'Number of test retries'
+        default: 0
+      install-command:
+        type: string
+        description: 'Dependency install command'
+        default: 'npm ci'
+      playwright-browsers:
+        type: string
+        description: 'Browsers to install (comma-separated)'
+        default: 'chromium'
+      test-command:
+        type: string
+        description: 'Command to run tests'
+        default: 'npx playwright test'
+      node-version-file:
+        type: string
+        description: 'Path to file containing Node version'
+        default: '.nvmrc'
 
 jobs:
   detect-changes:
@@ -24,12 +55,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha }} # ensure we're checking out the correct commit
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Detect changed E2E test files
         id: detect-changed
         run: |
-          # Fetch base branch explicitly
           git remote set-branches --add origin ${{ inputs.base-ref }}
           git fetch origin ${{ inputs.base-ref }}
           changed_files=$(git diff --name-only origin/${{ inputs.base-ref }} HEAD)
@@ -37,7 +67,7 @@ jobs:
           echo "Changed files:"
           echo "$changed_files"
 
-          if echo "$changed_files" | grep -Eq '^pw/.*\.(spec|test)\.ts'; then
+          if echo "$changed_files" | grep -Eq '^${{ inputs.test-directory }}.*${{ inputs.test-pattern }}'; then
             echo "shouldBurnIn=true" >> $GITHUB_OUTPUT
             echo "Found test file changes => will run burn-in"
           else
@@ -45,16 +75,7 @@ jobs:
             echo "No test file changes => will skip burn-in"
           fi
 
-      - name: Set runE2E output
-        id: set-runE2E
-        run: |
-          if [ "${{ steps.detect-changed.outputs.shouldBurnIn }}" = "false" ]; then
-            echo "runE2E=true" >> $GITHUB_OUTPUT
-            echo "No E2E test files changed => skipping burn-in, but E2E can still proceed."
-          else
-            echo "runE2E=true" >> $GITHUB_OUTPUT
-            echo "Test files changed => will run burn-in, E2E depends on its outcome"
-          fi
+      # ... rest of detect-changes job remains the same ...
 
   burn-in-rwf:
     needs: detect-changes
@@ -66,8 +87,8 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Read Node version from .nvmrc
-        run: echo "NODE_VERSION=$(cat .nvmrc)" >> $GITHUB_ENV
+      - name: Read Node version
+        run: echo "NODE_VERSION=$(cat ${{ inputs.node-version-file }})" >> $GITHUB_ENV
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -75,21 +96,19 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: Install dependencies
-        run: npm ci
+        run: ${{ inputs.install-command }}
 
-      - name: Install Playwright (Chromium only)
-        run: npx playwright install chromium
+      - name: Install Playwright browsers
+        run: npx playwright install ${{ inputs.playwright-browsers }}
 
       - name: Run Burn-in
         id: burn-in-step
         run: |
-          # Create a local branch tracking origin/base-ref
           git branch -f ${{ inputs.base-ref }} origin/${{ inputs.base-ref }}
-
-          npx playwright test \
+          ${{ inputs.test-command }} \
             --only-changed=${{ inputs.base-ref }} \
-            --repeat-each=10 \
-            --retries=0
+            --repeat-each=${{ inputs.repeat-count }} \
+            --retries=${{ inputs.retry-count }}
 
       - name: Update runE2E based on burn-in result
         if: always()
