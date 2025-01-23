@@ -25,7 +25,7 @@ on:
         default: 10
       retry-count:
         type: number
-        description: 'Number of test retries'
+        description: 'Number of test retries - recommended number is 0'
         default: 0
       install-command:
         type: string
@@ -39,10 +39,6 @@ on:
         type: string
         description: 'Command to run tests'
         default: 'npx playwright test'
-      node-version-file:
-        type: string
-        description: 'Path to file containing Node version'
-        default: '.nvmrc'
 
 jobs:
   detect-changes:
@@ -55,11 +51,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha }} # ensure we're checking out the correct commit
 
       - name: Detect changed E2E test files
         id: detect-changed
         run: |
+          # Fetch base branch explicitly
           git remote set-branches --add origin ${{ inputs.base-ref }}
           git fetch origin ${{ inputs.base-ref }}
           changed_files=$(git diff --name-only origin/${{ inputs.base-ref }} HEAD)
@@ -75,7 +72,16 @@ jobs:
             echo "No test file changes => will skip burn-in"
           fi
 
-      # ... rest of detect-changes job remains the same ...
+      - name: Set runE2E output
+        id: set-runE2E
+        run: |
+          if [ "${{ steps.detect-changed.outputs.shouldBurnIn }}" = "false" ]; then
+            echo "runE2E=true" >> $GITHUB_OUTPUT
+            echo "No E2E test files changed => skipping burn-in, but E2E can still proceed."
+          else
+            echo "runE2E=true" >> $GITHUB_OUTPUT
+            echo "Test files changed => will run burn-in, E2E depends on its outcome"
+          fi
 
   burn-in-rwf:
     needs: detect-changes
@@ -87,8 +93,8 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Read Node version
-        run: echo "NODE_VERSION=$(cat ${{ inputs.node-version-file }})" >> $GITHUB_ENV
+      - name: Read Node version from .nvmrc
+        run: echo "NODE_VERSION=$(cat .nvmrc)" >> $GITHUB_ENV
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -98,7 +104,7 @@ jobs:
       - name: Install dependencies
         run: ${{ inputs.install-command }}
 
-      - name: Install Playwright browsers
+      - name: Install Playwright browser(s) ${{ inputs.playwright-browsers }}
         run: npx playwright install ${{ inputs.playwright-browsers }}
 
       - name: Run Burn-in
