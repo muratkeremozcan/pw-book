@@ -10,8 +10,35 @@ on:
       base-ref:
         type: string
         description: 'Base ref to compare changed files with HEAD'
-        required: false
         default: 'main'
+      test-directory:
+        type: string
+        description: 'Directory containing test files'
+        default: 'pw/'
+      test-pattern:
+        type: string
+        description: 'Regex pattern to match test files'
+        default: '.*\.(spec|test)\.ts'
+      repeat-count:
+        type: number
+        description: 'Number of times to repeat each test'
+        default: 10
+      retry-count:
+        type: number
+        description: 'Number of test retries - recommended number is 0'
+        default: 0
+      install-command:
+        type: string
+        description: 'Dependency install command'
+        default: 'npm ci'
+      playwright-browsers:
+        type: string
+        description: 'Browsers to install (comma-separated)'
+        default: 'chromium'
+      test-command:
+        type: string
+        description: 'Command to run tests'
+        default: 'npx playwright test'
 
 jobs:
   detect-changes:
@@ -37,7 +64,7 @@ jobs:
           echo "Changed files:"
           echo "$changed_files"
 
-          if echo "$changed_files" | grep -Eq '^pw/.*\.(spec|test)\.ts'; then
+          if echo "$changed_files" | grep -Eq '^${{ inputs.test-directory }}.*${{ inputs.test-pattern }}'; then
             echo "shouldBurnIn=true" >> $GITHUB_OUTPUT
             echo "Found test file changes => will run burn-in"
           else
@@ -75,21 +102,19 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: Install dependencies
-        run: npm ci
+        run: ${{ inputs.install-command }}
 
-      - name: Install Playwright (Chromium only)
-        run: npx playwright install chromium
+      - name: Install Playwright browser(s) ${{ inputs.playwright-browsers }}
+        run: npx playwright install ${{ inputs.playwright-browsers }}
 
       - name: Run Burn-in
         id: burn-in-step
         run: |
-          # Create a local branch tracking origin/base-ref
           git branch -f ${{ inputs.base-ref }} origin/${{ inputs.base-ref }}
-
-          npx playwright test \
+          ${{ inputs.test-command }} \
             --only-changed=${{ inputs.base-ref }} \
-            --repeat-each=10 \
-            --retries=0
+            --repeat-each=${{ inputs.repeat-count }} \
+            --retries=${{ inputs.retry-count }}
 
       - name: Update runE2E based on burn-in result
         if: always()
