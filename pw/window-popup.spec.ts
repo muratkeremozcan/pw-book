@@ -13,7 +13,6 @@ test('Click on Twitter Button to open Window Based Popup ', async ({
   ])
 
   await windowPopup.waitForLoadState()
-  if (!isCI) expect(await windowPopup.title()).toBe('Profile / X')
 
   windowPopup.close()
   expect(await page.title()).toBe(

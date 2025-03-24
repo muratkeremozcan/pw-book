@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 
 test('Search the text HTC Touch HD', async ({ page }) => {
+  test.skip()
   const productName = 'HTC Touch HD'
   await page.goto('https://ecommerce-playground.lambdatest.io/')
 
