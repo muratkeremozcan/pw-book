@@ -115,7 +115,8 @@ jobs:
             --only-changed=${{ inputs.base-ref }} \
             --repeat-each=${{ inputs.repeat-count }} \
             --retries=${{ inputs.retry-count }} \
-            --env PW_MULTI_BROWSER=true
+        env:
+          PW_MULTI_BROWSER: true
 
       - name: Update runE2E based on burn-in result
         if: always()
