@@ -50,12 +50,20 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] }
-    }
+    },
+
+    // Only enable Google Chrome when multi-browser is explicitly enabled
+    ...(process.env.PW_MULTI_BROWSER === 'true' ? [
+      {
+        name: 'google-chrome',
+        use: { ...devices['Desktop Chrome'], channel: 'chrome' }
+      }
+    ] : [])
 
     // {
     //   name: 'firefox',
-    //   use: { ...devices['Desktop Firefox'] },
-    // },
+    //   use: { ...devices['Desktop Firefox'] }
+    // }
 
     // {
     //   name: 'webkit',
@@ -76,11 +84,7 @@ export default defineConfig({
     // {
     //   name: 'Microsoft Edge',
     //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    // },
-    // {
-    //   name: 'Google Chrome',
-    //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-    // },
+    // }
   ]
 
   /* Run your local dev server before starting the tests */
