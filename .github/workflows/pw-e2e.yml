@@ -35,7 +35,7 @@ jobs:
         run: |
           echo "runE2E value: ${{ needs.burn-in.outputs.runE2E }}"
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
